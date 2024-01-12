@@ -10,7 +10,6 @@
  * 
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTiltInput, float, Value);
-
 UCLASS()
 class LAUNCHERPROJECT_API UMainGameInstance : public UGameInstance
 {

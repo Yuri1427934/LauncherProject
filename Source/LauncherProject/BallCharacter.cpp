@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "MainGameInstance.h"
+#include "Misc/App.h"
 
 // Sets default values
 ABallCharacter::ABallCharacter()
@@ -20,6 +21,7 @@ ABallCharacter::ABallCharacter()
 	SphereMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereMesh"));
 	RootComponent = SphereMesh;
 	SphereMesh->SetSimulatePhysics(true);
+	SphereMesh->SetEnableGravity(false);
 
 	// Create a camera boom attached to the root (capsule)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -40,19 +42,43 @@ ABallCharacter::ABallCharacter()
 void ABallCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	UpdateGravityDirection();
+	//GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, (Gravity * CameraBoom->GetUpVector()).ToString());
+	
 }
 
 void ABallCharacter::TiltAction(float Val)
 {
-	Cast<UMainGameInstance>(GetGameInstance())->TiltInputEvent.Broadcast(Val);
+	//Cast<UMainGameInstance>(GetGameInstance())->TiltInputEvent.Broadcast(Val);
+	FRotator curRot = CameraBoom->GetRelativeRotation();
+	curRot = FRotator(0, 0, FMath::ClampAngle(curRot.Roll+ Val * FApp::GetDeltaTime() * RotateSpd, -15.0f, 15.0f));
+	//CameraBoom->AddRelativeRotation(FRotator(0, 0, Val * FApp::GetDeltaTime()* RotateSpd));
+	CameraBoom->SetRelativeRotation(curRot);
+	UpdateGravityDirection();
+}
+
+void ABallCharacter::JumpAction()
+{
+	if (!canJump)return;
+	canJump = false;
+	SphereMesh->AddImpulse(-GravityDirection* JumpForce,"", true);
+	FTimerHandle timeerhandle;
+	GetWorld()->GetTimerManager().SetTimer(timeerhandle, [&]()
+		{
+			canJump = true;
+		}, 3.0f, false);
+}
+
+void ABallCharacter::UpdateGravityDirection()
+{
+	GravityDirection = -CameraBoom->GetUpVector();
 }
 
 // Called every frame
 void ABallCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	SphereMesh->SetPhysicsLinearVelocity(Gravity * GravityDirection, true);
 }
 
 // Called to bind functionality to input
@@ -60,6 +86,6 @@ void ABallCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ABallCharacter::TiltAction);
-
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ABallCharacter::JumpAction);
 }
 
