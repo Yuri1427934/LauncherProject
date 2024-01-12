@@ -34,8 +34,13 @@ public:
 		float JumpForce = 500.0f;
 
 	bool canJump=true;
+	bool isStop;
 
 	FVector GravityDirection;
+
+	void StopMovement();
+
+	void StartMovement();
 
 protected:
 	// Called when the game starts or when spawned
@@ -50,6 +55,9 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION()
+		void ApplyForce(FVector i_force);
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
