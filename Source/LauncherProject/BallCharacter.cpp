@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "MainGameInstance.h"
+#include "Misc/App.h"
 
 // Sets default values
 ABallCharacter::ABallCharacter()
@@ -20,6 +21,7 @@ ABallCharacter::ABallCharacter()
 	SphereMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereMesh"));
 	RootComponent = SphereMesh;
 	SphereMesh->SetSimulatePhysics(true);
+	SphereMesh->SetEnableGravity(false);
 
 	// Create a camera boom attached to the root (capsule)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -36,30 +38,71 @@ ABallCharacter::ABallCharacter()
 	SideViewCameraComponent->bUsePawnControlRotation = false; // We don't want the controller rotating the camera
 }
 
+void ABallCharacter::StopMovement()
+{
+	isStop = true;
+	SphereMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+}
+
+void ABallCharacter::StartMovement()
+{
+	isStop = false;
+}
+
 // Called when the game starts or when spawned
 void ABallCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	UpdateGravityDirection();
+	//GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, (Gravity * CameraBoom->GetUpVector()).ToString());
 
 }
 
 void ABallCharacter::TiltAction(float Val)
 {
-	Cast<UMainGameInstance>(GetGameInstance())->TiltInputEvent.Broadcast(Val);
+	//Cast<UMainGameInstance>(GetGameInstance())->TiltInputEvent.Broadcast(Val);
+	FRotator curRot = CameraBoom->GetRelativeRotation();
+	curRot = FRotator(curRot.Pitch, curRot.Yaw, FMath::ClampAngle(curRot.Roll + (-Val * FApp::GetDeltaTime() * RotateSpd), -15.0f, 15.0f));
+	//CameraBoom->AddRelativeRotation(FRotator(0, 0, Val * FApp::GetDeltaTime()* RotateSpd));
+	CameraBoom->SetRelativeRotation(curRot);
+	UpdateGravityDirection();
+}
+
+void ABallCharacter::JumpAction()
+{
+	if (!canJump || isStop)return;
+	canJump = false;
+	ApplyForce(-GravityDirection * JumpForce);
+	FTimerHandle timeerhandle;
+	GetWorld()->GetTimerManager().SetTimer(timeerhandle, [&]()
+		{
+			canJump = true;
+		}, 3.0f, false);
+}
+
+void ABallCharacter::UpdateGravityDirection()
+{
+	GravityDirection = -CameraBoom->GetUpVector();
 }
 
 // Called every frame
 void ABallCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (isStop)return;
+	SphereMesh->SetPhysicsLinearVelocity(Gravity * GravityDirection, true);
+}
 
+void ABallCharacter::ApplyForce(FVector i_force)
+{
+	SphereMesh->AddImpulse(i_force, "", true);
 }
 
 // Called to bind functionality to input
 void ABallCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	//Super::SetupPlayerInputComponent(PlayerInputComponent);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ABallCharacter::TiltAction);
-
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ABallCharacter::JumpAction);
 }
 

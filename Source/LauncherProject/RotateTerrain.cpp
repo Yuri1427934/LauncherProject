@@ -11,8 +11,8 @@ ARotateTerrain::ARotateTerrain()
 	PrimaryActorTick.bCanEverTick = true;
 	MainMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	RootComponent = MainMesh;
-	MainMesh->SetSimulatePhysics(true);
-	MainMesh->SetEnableGravity(false);
+	//MainMesh->SetSimulatePhysics(true);
+	//MainMesh->SetEnableGravity(false);
 }
 
 // Called when the game starts or when spawned
@@ -22,7 +22,7 @@ void ARotateTerrain::BeginPlay()
 	auto _ins = Cast<UMainGameInstance>(GetGameInstance());
 	if (_ins != NULL)
 	{
-		_ins->TiltInputEvent.AddUniqueDynamic(this, &ARotateTerrain::TiltAction);
+		//_ins->TiltInputEvent.AddUObject(this, &ARotateTerrain::TiltAction);
 	}
 }
 
