@@ -19,7 +19,7 @@ ACannon::ACannon()
 	CollisionArea->OnComponentBeginOverlap.AddDynamic(this, &ACannon::OnOverlapBegin);
 
 	loadPos = CreateDefaultSubobject<USceneComponent>(TEXT("LoadPos"));
-	CollisionArea->SetupAttachment(RootComponent);
+	loadPos->SetupAttachment(RootComponent);
 	loadPos->SetRelativeLocation(FVector::ZeroVector);
 }
 
